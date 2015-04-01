@@ -26,6 +26,19 @@ To install hook, copy pre-commit file to your project .git/hooks/pre-commit:
 Now, when you will make some modifications for code and will try to commit, GIT
 will stop you and tells where problem exist.
 
+Usage example
+-------------
+
+Example of PHP script beeing commited with PHP syntax errors:
+
+    Syntax errors found in file: cms/content.php 
+
+    Found PHP parse errors: 
+    PHP Parse error: syntax error, unexpected ')' in /path/to/project/cms/content.php on line 39
+
+    Fix errors and commit again.
+
+
 Bugs
 ----
 If you have found any bugs, please track them here:
