@@ -1,21 +1,25 @@
 #!/bin/bash
-# Author: Remigijus Jarmalavičius <remigijus@jarmalavicius.lt> 
-# Author: Vytautas Povilaitis <php-checker@vytux.lt>
 #
+# Check for PHP syntax errors before doing actual commit
+#
+# Author: Remigijus Jarmalavičius <remigijus@jarmalavicius.lt>
+# Author: Vytautas Povilaitis <php-checker@vytux.lt>
 # XDebug check added by William Clemens <http://github.com/wesclemens>
 # Handle spaces in filenames Dave Barnwell <https://github.com/freshsauce>
 
 ROOT_DIR="$(pwd)/"
-LIST=$(git diff-index --cached --name-only --diff-filter=ACMR HEAD)
 ERRORS_BUFFER=""
-for file in $LIST
+while read st file
 do
     EXTENSION=$(echo "$file" | grep ".php$")
-    if [ "$EXTENSION" != "" ]; then
+    if [ "$EXTENSION" != "" ]
+    then
         # set display_errors
         ERRORS=$(php -d display_errors=1 -l "$ROOT_DIR$file" 2>&1 | grep "Parse error")
-        if [ "$ERRORS" != "" ]; then
-            if [ "$ERRORS_BUFFER" != "" ]; then
+        if [ "$ERRORS" != "" ]
+        then
+            if [ "$ERRORS_BUFFER" != "" ]
+            then
                 ERRORS_BUFFER="$ERRORS_BUFFER\n$ERRORS"
             else
                 ERRORS_BUFFER="$ERRORS"
@@ -24,22 +28,25 @@ do
         fi
 
         # Check for xdebug statments
-        ERRORS=$(grep -nH xdebug_ "$ROOT_DIR$file" | \
-                 sed -e 's/^/Found XDebug Statment : /')
-        if [ "$ERRORS" != "" ]; then
-            if [ "$ERRORS_BUFFER" != "" ]; then
+        ERRORS=$(grep -nH xdebug_ "$ROOT_DIR$file" | sed -e 's/^/Found XDebug Statment : /')
+        if [ "$ERRORS" != "" ]
+        then
+            if [ "$ERRORS_BUFFER" != "" ]
+            then
                 ERRORS_BUFFER="$ERRORS_BUFFER\n$ERRORS"
             else
                 ERRORS_BUFFER="$ERRORS"
             fi
         fi
     fi
-done
-if [ "$ERRORS_BUFFER" != "" ]; then
-    echo 
+done < <(git diff --cached --name-status --diff-filter=ACMR)
+
+if [ "$ERRORS_BUFFER" != "" ]
+then
+    echo
     echo "Found PHP parse errors: "
     echo -e $ERRORS_BUFFER
-    echo 
+    echo
     echo "PHP parse errors found. Fix errors and commit again."
     exit 1
 else
