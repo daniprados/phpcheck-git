@@ -11,6 +11,7 @@ ROOT_DIR="$(pwd)/"
 ERRORS_BUFFER=""
 RED='\033[0;31m'
 NC='\033[0m'
+echo 
 while read st file
 do
     EXTENSION=$(echo "$file" | grep ".php$")
@@ -26,7 +27,7 @@ do
             else
                 ERRORS_BUFFER="$ERRORS"
             fi
-            printf "Syntax errors found in file: ${RED} $file ${NC}\n"
+	    printf "Syntax errors found in file: ${RED} $file ${NC}\n"
         fi
 
         # Check for xdebug statments
