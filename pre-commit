@@ -7,11 +7,17 @@
 #       Vytautas Povilaitis <php-checker@vytux.lt>
 #       William Clemens <http://github.com/wesclemens>
 #       Dave Barnwell <https://github.com/freshsauce>
+#
+#
+# Git Config Options
+#       linter.php.silent : (type: boolean) Suppresses all messages that are not linter errors.
+#
 
 IFS=$'\n\t'
 ERROR_FOUND=false
 RED=
 NC=
+SILENT_MODE=$(git config --get linter.php.silent || echo false)
 
 function changed_php_files {
     local repo_root=$(git rev-parse --show-toplevel)
@@ -39,12 +45,19 @@ function print_error {
     ERROR_FOUND=true
 }
 
+function print_mesg {
+    if ! $SILENT_MODE
+    then
+        echo $@
+    fi
+}
+
 function main {
     local errors=
 
     if ! command -v php >/dev/null 2>&1
     then
-        echo "PHP-cli not installed. PHP lint checks will be skipped."
+        print_mesg "PHP-cli not installed. PHP lint checks will be skipped."
         exit 0;
     fi
 
@@ -69,11 +82,12 @@ function main {
         fi
     done
 
-    if $ERROR_FOUND; then
+    if $ERROR_FOUND
+    then
         echo -e "\nPHP parse errors found. Fix errors and commit again."
         exit 1
     else
-        echo "No PHP parse errors found. Committed successfully."
+        print_mesg "No PHP parse errors found. PHP lint successfully."
     fi
 }
 
