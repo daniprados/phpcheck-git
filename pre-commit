@@ -2,55 +2,79 @@
 #
 # Check for PHP syntax errors before doing actual commit
 #
-# Author: Remigijus Jarmalavičius <remigijus@jarmalavicius.lt>
-# Author: Vytautas Povilaitis <php-checker@vytux.lt>
-# XDebug check added by William Clemens <http://github.com/wesclemens>
-# Handle spaces in filenames Dave Barnwell <https://github.com/freshsauce>
+# Contributers:
+#       Remigijus Jarmalavičius <remigijus@jarmalavicius.lt>
+#       Vytautas Povilaitis <php-checker@vytux.lt>
+#       William Clemens <http://github.com/wesclemens>
+#       Dave Barnwell <https://github.com/freshsauce>
 
-ROOT_DIR="$(pwd)/"
-ERRORS_BUFFER=""
-RED='\033[0;31m'
-NC='\033[0m'
-while read st file
-do
-    EXTENSION=$(echo "$file" | grep ".php$")
-    if [ "$EXTENSION" != "" ]
-    then
-        # set display_errors
-        ERRORS=$(php -d display_errors=1 -l "$ROOT_DIR$file" 2>&1 | grep "Parse error")
-        if [ "$ERRORS" != "" ]
-        then
-            if [ "$ERRORS_BUFFER" != "" ]
-            then
-                ERRORS_BUFFER="$ERRORS_BUFFER\n$ERRORS"
-            else
-                ERRORS_BUFFER="$ERRORS"
-            fi
-	    printf "Syntax errors found in file: ${RED} $file ${NC}\n"
-        fi
+IFS=$'\n\t'
+ERROR_FOUND=false
+RED=
+NC=
 
-        # Check for xdebug statments
-        ERRORS=$(grep -nH xdebug_ "$ROOT_DIR$file" | sed -e 's/^/Found XDebug Statment : /')
-        if [ "$ERRORS" != "" ]
-        then
-            if [ "$ERRORS_BUFFER" != "" ]
-            then
-                ERRORS_BUFFER="$ERRORS_BUFFER\n$ERRORS"
-            else
-                ERRORS_BUFFER="$ERRORS"
-            fi
-        fi
+function changed_php_files {
+    local repo_root=$(git rev-parse --show-toplevel)
+    git diff --cached --name-only --diff-filter=ACMR | grep ".php$" | sed -e "s|^|$repo_root/|"
+}
+
+function php_lint {
+    php -l "$1" 2>&1 | grep "Parse error"
+}
+
+function xdebug_grep {
+    grep -nH xdebug_ "$1" | sed -e 's/^/PHP XDebug Statment : /'
+}
+
+function print_error {
+    local l_file=$1
+    shift
+
+    if ! $ERROR_FOUND; then
+        echo -e "Found PHP parse errors:\n "
     fi
-done < <(git diff --cached --name-status --diff-filter=ACMR)
 
-if [ "$ERRORS_BUFFER" != "" ]
-then
-    echo
-    echo "Found PHP parse errors: "
-    echo -e $ERRORS_BUFFER
-    echo
-    echo "PHP parse errors found. Fix errors and commit again."
-    exit 1
-else
-    echo "No PHP parse errors found. Committed successfully."
-fi
+    echo $@ | sed -e "s|${l_file}|${RED}${l_file}${NC}|g"
+    
+    ERROR_FOUND=true
+}
+
+function main {
+    local errors=
+
+    if ! command -v php >/dev/null 2>&1
+    then
+        echo "PHP-cli not installed"
+        exit 0;
+    fi
+
+
+    case "$(git config --get color.ui)" in
+      "auto" | "always")
+          RED=$(git config --get-color color.interactive.error  1)
+          NC=$'\033[0m'
+          ;;
+      *)
+          RED=
+          NC=
+          ;;
+    esac
+
+    for file in $(changed_php_files)
+    do
+        errors=$(php_lint $file; xdebug_grep $file)
+        if [[ "$errors" ]]
+        then
+            print_error $file $errors
+        fi
+    done
+
+    if $ERROR_FOUND; then
+        echo -e "\nPHP parse errors found. Fix errors and commit again."
+        exit 1
+    else
+        echo "No PHP parse errors found. Committed successfully."
+    fi
+}
+
+main
