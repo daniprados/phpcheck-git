@@ -44,7 +44,7 @@ function main {
 
     if ! command -v php >/dev/null 2>&1
     then
-        echo "PHP-cli not installed"
+        echo "PHP-cli not installed. PHP lint checks will be skipped."
         exit 0;
     fi
 
