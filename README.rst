@@ -39,6 +39,10 @@ Example of PHP script beeing commited with PHP syntax errors:
     Fix errors and commit again.
 
 
+Config
+------
+    linter.php.silent : (type: boolean) Suppresses all messages that are not linter errors.
+
 Bugs
 ----
 If you have found any bugs, please track them here:
