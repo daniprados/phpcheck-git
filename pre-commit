@@ -34,10 +34,11 @@ function xdebug_grep {
 
 function print_error {
     local l_file=$REPO_ROOT/$1
+    local filename=$1
     shift
 
     if ! $ERROR_FOUND; then
-        echo -e "Found PHP parse errors:\n "
+        echo -e "Found PHP parse errors  ${filename}:\n "
     fi
 
     echo $@ | sed -e "s|${l_file}|${RED}${l_file}${NC}|g"
